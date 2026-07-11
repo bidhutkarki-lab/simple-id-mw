@@ -25,11 +25,6 @@ spring:
           uri: ${TIC_TAC_TOE_SERVICE_URI:http://localhost:8082}
           predicates:
             - Path=/tic-tac-toe/**
-      # Applied to every route. Cookies are stripped at the edge; the JWT and any
-      # client-supplied X-User-Id are stripped by IdentityPropagationFilter, which
-      # then injects a trusted X-User-Id from the validated token.
-      default-filters:
-        - RemoveRequestHeader=Cookie
 
 # Gateway-specific settings.
 gateway:

@@ -6,6 +6,7 @@ import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -39,31 +40,44 @@ public class IdentityPropagationFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-        // Defense in depth: always drop a client-supplied identity header.
-        ServerHttpRequest sanitized = exchange.getRequest().mutate()
-                .headers(headers -> headers.remove(USER_ID_HEADER))
-                .build();
-
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .filter(JwtAuthenticationToken.class::isInstance)
-                .map(auth -> ((JwtAuthenticationToken) auth).getToken())
-                .map(jwt -> withTrustedIdentity(exchange, sanitized, jwt))
-                .defaultIfEmpty(exchange.mutate().request(sanitized).build())
+                .map(auth -> sanitize(exchange, ((JwtAuthenticationToken) auth).getToken()))
+                .switchIfEmpty(Mono.fromSupplier(() -> sanitize(exchange, null)))
                 .flatMap(chain::filter);
     }
 
-    private ServerWebExchange withTrustedIdentity(
-            ServerWebExchange exchange, ServerHttpRequest sanitized, Jwt jwt) {
-        ServerHttpRequest request = sanitized.mutate()
-                .headers(headers -> {
-                    headers.remove(HttpHeaders.AUTHORIZATION);
-                    String userId = jwt.getClaimAsString(userIdClaim);
-                    if (userId != null) {
-                        headers.set(USER_ID_HEADER, userId);
-                    }
-                })
-                .build();
+    /**
+     * Returns an exchange whose request carries a rewritten, writable header set.
+     * The incoming request's headers are read-only at runtime, so we copy them
+     * into a fresh {@link HttpHeaders} and expose it via a request decorator.
+     */
+    private ServerWebExchange sanitize(ServerWebExchange exchange, Jwt jwt) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.addAll(exchange.getRequest().getHeaders());
+
+        // Cookies are noise for a bearer-token API gateway; strip them at the edge.
+        headers.remove(HttpHeaders.COOKIE);
+
+        // Never trust a client-supplied identity header.
+        headers.remove(USER_ID_HEADER);
+
+        if (jwt != null) {
+            // Token is validated here and not forwarded downstream.
+            headers.remove(HttpHeaders.AUTHORIZATION);
+            String userId = jwt.getClaimAsString(userIdClaim);
+            if (userId != null) {
+                headers.set(USER_ID_HEADER, userId);
+            }
+        }
+
+        ServerHttpRequest request = new ServerHttpRequestDecorator(exchange.getRequest()) {
+            @Override
+            public HttpHeaders getHeaders() {
+                return headers;
+            }
+        };
         return exchange.mutate().request(request).build();
     }
 
