@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: simple-id-mw
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # JWKS endpoint the gateway uses to fetch signing keys and verify JWTs.
+          # Override with the JWKS_URI env var (or point issuer-uri at your auth server).
+          jwk-set-uri: ${JWKS_URI:http://localhost:8081/auth/.well-known/jwks.json}
+
+  cloud:
+    gateway:
+      # Static path-prefix -> service mappings. Add one block per microservice.
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/auth/**
+        - id: tic-tac-toe-service
+          uri: ${TIC_TAC_TOE_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/tic-tac-toe/**
+      # Applied to every route. Cookies are stripped at the edge; the JWT and any
+      # client-supplied X-User-Id are stripped by IdentityPropagationFilter, which
+      # then injects a trusted X-User-Id from the validated token.
+      default-filters:
+        - RemoveRequestHeader=Cookie
+
+# Gateway-specific settings.
+gateway:
+  security:
+    # Endpoints that bypass JWT validation (comma-separated Ant patterns), e.g.
+    # login/registration. Must match your auth-service route prefix above.
+    public-paths: ${PUBLIC_PATHS:/auth/register,/auth/login}
+  identity:
+    # JWT claim whose value is forwarded downstream as the trusted X-User-Id header.
+    user-id-claim: ${USER_ID_CLAIM:sub}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    org.springframework.security: INFO
