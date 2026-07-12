@@ -1,5 +1,6 @@
 package com.example.simpleidmw.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -26,6 +27,7 @@ import reactor.core.publisher.Mono;
  * </ul>
  * Downstream services can therefore trust {@code X-User-Id} unconditionally.
  */
+@Slf4j
 @Component
 public class IdentityPropagationFilter implements GlobalFilter, Ordered {
 
@@ -40,6 +42,8 @@ public class IdentityPropagationFilter implements GlobalFilter, Ordered {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest incoming = exchange.getRequest();
+        log.info("Incoming request: {} {}", incoming.getMethod(), incoming.getURI().getRawPath());
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .filter(JwtAuthenticationToken.class::isInstance)
