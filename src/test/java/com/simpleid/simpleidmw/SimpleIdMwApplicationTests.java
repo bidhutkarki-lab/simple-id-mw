@@ -1,4 +1,4 @@
-package com.example.simpleidmw;
+package com.simpleid.simpleidmw;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

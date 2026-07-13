@@ -1,4 +1,4 @@
-package com.example.simpleidmw.config;
+package com.simpleid.simpleidmw.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,4 +1,4 @@
-package com.example.simpleidmw;
+package com.simpleid.simpleidmw;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

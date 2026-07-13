@@ -1,4 +1,4 @@
-package com.example.simpleidmw.config;
+package com.simpleid.simpleidmw.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +20,7 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(
             ServerHttpSecurity http,
-            @Value("${gateway.security.public-paths:/auth/register,/auth/login}") String[] publicPaths) {
+            @Value("${gateway.security.public-paths:/tic-tac-toe/users/register,/auth/login}") String[] publicPaths) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchange -> exchange
