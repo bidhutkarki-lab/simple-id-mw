@@ -31,7 +31,7 @@ gateway:
   security:
     # Endpoints that bypass JWT validation (comma-separated Ant patterns), e.g.
     # login/registration. Must match your auth-service route prefix above.
-    public-paths: ${PUBLIC_PATHS:/auth/register,/auth/login}
+    public-paths: ${PUBLIC_PATHS:/tic-tac-toe/users/register,/auth/login}
   identity:
     # JWT claim whose value is forwarded downstream as the trusted X-User-Id header.
     user-id-claim: ${USER_ID_CLAIM:sub}
