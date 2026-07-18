@@ -24,3 +24,6 @@ target/
 
 ### Mac ###
 .DS_Store
+
+### Local env ###
+.env
