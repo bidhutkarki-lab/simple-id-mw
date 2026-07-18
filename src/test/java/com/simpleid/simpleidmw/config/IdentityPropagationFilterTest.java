@@ -29,7 +29,7 @@ class IdentityPropagationFilterTest {
                 .header(IdentityPropagationFilter.USER_ID_HEADER, "spoofed")
                 .build();
 
-        HttpHeaders forwarded = runFilter(request, new JwtAuthenticationToken(jwt));
+        HttpHeaders forwarded = runFilter(request, new JwtAuthenticationToken(jwt)).getHeaders();
 
         assertThat(forwarded.getFirst(IdentityPropagationFilter.USER_ID_HEADER)).isEqualTo("user-123");
         assertThat(forwarded.getFirst(HttpHeaders.AUTHORIZATION)).isNull();
@@ -41,12 +41,28 @@ class IdentityPropagationFilterTest {
                 .header(IdentityPropagationFilter.USER_ID_HEADER, "spoofed")
                 .build();
 
-        HttpHeaders forwarded = runFilter(request, null);
+        HttpHeaders forwarded = runFilter(request, null).getHeaders();
 
         assertThat(forwarded.getFirst(IdentityPropagationFilter.USER_ID_HEADER)).isNull();
     }
 
-    private HttpHeaders runFilter(MockServerHttpRequest request, JwtAuthenticationToken auth) {
+    @Test
+    void stripsAccessTokenQueryParamFromForwardedRequest() {
+        Jwt jwt = Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .subject("user-123")
+                .build();
+        MockServerHttpRequest request = MockServerHttpRequest
+                .get("/tic-tac-toe/ws/info?access_token=secret&foo=bar")
+                .build();
+
+        ServerHttpRequest forwarded = runFilter(request, new JwtAuthenticationToken(jwt));
+
+        assertThat(forwarded.getURI().getQuery()).doesNotContain("access_token");
+        assertThat(forwarded.getURI().getQuery()).contains("foo=bar");
+    }
+
+    private ServerHttpRequest runFilter(MockServerHttpRequest request, JwtAuthenticationToken auth) {
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
         AtomicReference<ServerHttpRequest> forwarded = new AtomicReference<>();
         GatewayFilterChain chain = ex -> {
@@ -60,6 +76,6 @@ class IdentityPropagationFilterTest {
         }
         result.block();
 
-        return forwarded.get().getHeaders();
+        return forwarded.get();
     }
 }

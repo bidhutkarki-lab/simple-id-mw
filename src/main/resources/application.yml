@@ -32,6 +32,10 @@ gateway:
     # Endpoints that bypass JWT validation (comma-separated Ant patterns), e.g.
     # login/registration. Must match your auth-service route prefix above.
     public-paths: ${PUBLIC_PATHS:/tic-tac-toe/users/register,/auth/login}
+    # WebSocket/SockJS handshake path(s). A browser cannot set an Authorization
+    # header on a WS handshake, so on these paths only the JWT is also accepted
+    # from the `access_token` query parameter. Still fully authenticated.
+    websocket-paths: ${WEBSOCKET_PATHS:/tic-tac-toe/ws/**}
   identity:
     # JWT claim whose value is forwarded downstream as the trusted X-User-Id header.
     user-id-claim: ${USER_ID_CLAIM:sub}

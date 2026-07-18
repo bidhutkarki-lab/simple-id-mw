@@ -24,6 +24,31 @@ right downstream service.
    from the JWT. Cookies are stripped at the edge.
 4. `GET /actuator/health` is open (no token) for liveness/readiness probes.
 
+## WebSocket / SockJS
+
+The gateway proxies WebSocket (and SockJS fallback) traffic through the same
+path-prefix routes — Spring Cloud Gateway upgrades an `http://` route target to
+`ws://` automatically on a handshake request. The tic-tac-toe STOMP-over-SockJS
+endpoint at `/tic-tac-toe/ws` is reached through the gateway with no extra route.
+
+A browser **cannot** set an `Authorization` header on a WebSocket/SockJS
+handshake, so on the configured **WebSocket paths** (`WEBSOCKET_PATHS`, default
+`/tic-tac-toe/ws/**`) the JWT is also accepted from the `access_token` query
+parameter. These paths are still fully authenticated — an invalid or missing
+token gets `401`. Every other route keeps the stricter header-only behaviour, so
+tokens are never accepted in URLs except where the browser leaves no
+alternative. The `access_token` query parameter is stripped before the handshake
+is forwarded, so the token never reaches downstream URLs or logs; downstream
+services see only the trusted `X-User-Id`.
+
+The frontend points SockJS at the gateway and appends the token:
+
+```ts
+const WS_URL = import.meta.env.VITE_WS_URL ?? "http://localhost:8080/tic-tac-toe/ws";
+// ...
+webSocketFactory: () => new SockJS(`${WS_URL}?access_token=${encodeURIComponent(token)}`),
+```
+
 ## Configuration
 
 All values have placeholder defaults — override via environment variables.
@@ -34,6 +59,7 @@ All values have placeholder defaults — override via environment variables.
 | `AUTH_SERVICE_URI`      | Target for `/auth/**`                  | `http://localhost:8081`                              |
 | `TIC_TAC_TOE_SERVICE_URI` | Target for `/tic-tac-toe/**`         | `http://localhost:8082`                              |
 | `PUBLIC_PATHS`          | Paths that bypass JWT validation       | `/auth/register,/auth/login`                         |
+| `WEBSOCKET_PATHS`       | Handshake paths that also accept the JWT via `access_token` query param | `/tic-tac-toe/ws/**`            |
 | `USER_ID_CLAIM`         | JWT claim forwarded as `X-User-Id`     | `sub`                                                |
 
 ### Adding a route

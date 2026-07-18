@@ -11,7 +11,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
                 "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=http://localhost:8081/auth/.well-known/jwks.json",
-                "gateway.security.public-paths=/auth/register,/auth/login"
+                "gateway.security.public-paths=/auth/register,/auth/login",
+                "gateway.security.websocket-paths=/tic-tac-toe/ws/**"
         })
 class SecurityConfigIntegrationTest {
 
@@ -32,5 +33,12 @@ class SecurityConfigIntegrationTest {
         client.post().uri("/auth/login")
                 .exchange()
                 .expectStatus().value(status -> assertThat(status).isNotEqualTo(401));
+    }
+
+    @Test
+    void webSocketHandshakeWithoutTokenIsUnauthorized() {
+        client.get().uri("/tic-tac-toe/ws/info")
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 }
