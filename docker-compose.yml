@@ -1,0 +1,43 @@
+services:
+  gateway:
+    build:
+      context: .
+    image: simple-id-mw:latest
+    container_name: simple-id-mw
+    ports:
+      - "8080:8080"
+    environment:
+      # Point these at your auth server and downstream services. The defaults use
+      # docker network hostnames (see the commented service stubs below); override
+      # via a .env file or your shell for a different topology.
+      JWKS_URI: ${JWKS_URI:-http://auth-service:8081/auth/.well-known/jwks.json}
+      AUTH_SERVICE_URI: ${AUTH_SERVICE_URI:-http://auth-service:8081}
+      TIC_TAC_TOE_SERVICE_URI: ${TIC_TAC_TOE_SERVICE_URI:-http://tic-tac-toe-service:8082}
+      PUBLIC_PATHS: ${PUBLIC_PATHS:-/tic-tac-toe/users/register,/auth/login}
+      WEBSOCKET_PATHS: ${WEBSOCKET_PATHS:-/tic-tac-toe/ws/**}
+      USER_ID_CLAIM: ${USER_ID_CLAIM:-sub}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - simple-id
+
+  # The gateway only routes; the auth server and downstream services live
+  # elsewhere. Add them here (or in another compose file on the same network) so
+  # the hostnames above resolve. Example stubs:
+  #
+  # auth-service:
+  #   image: your-org/auth-service:latest
+  #   networks: [simple-id]
+  #
+  # tic-tac-toe-service:
+  #   image: your-org/tic-tac-toe-service:latest
+  #   networks: [simple-id]
+
+networks:
+  simple-id:
+    driver: bridge

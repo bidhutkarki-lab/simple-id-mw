@@ -1,0 +1,16 @@
+target/
+.git/
+.gitignore
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+.DS_Store
+HELP.md
+Dockerfile
+.dockerignore
+docker-compose.yml

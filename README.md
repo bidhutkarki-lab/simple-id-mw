@@ -80,6 +80,36 @@ Add a block under `spring.cloud.gateway.routes` in
 JWKS_URI=https://your-auth-server/.well-known/jwks.json ./mvnw spring-boot:run
 ```
 
+## Run with Docker
+
+Build the image and start the gateway with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The gateway listens on `http://localhost:8080`. Override any of the environment
+variables from the table above via a `.env` file or your shell, e.g.:
+
+```bash
+JWKS_URI=https://your-auth-server/.well-known/jwks.json docker compose up --build
+```
+
+The compose file runs only the gateway — the auth server and downstream services
+live elsewhere. The default `*_URI` values use Docker network hostnames
+(`auth-service`, `tic-tac-toe-service`); add those services to the `simple-id`
+network (see the commented stubs in `docker-compose.yml`) so the hostnames
+resolve, or point the variables at wherever your services actually run.
+
+To build/run the image directly without Compose:
+
+```bash
+docker build -t simple-id-mw:latest .
+docker run --rm -p 8080:8080 \
+  -e JWKS_URI=https://your-auth-server/.well-known/jwks.json \
+  simple-id-mw:latest
+```
+
 ## Test
 
 ```bash
